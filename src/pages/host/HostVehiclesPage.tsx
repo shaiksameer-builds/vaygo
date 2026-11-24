@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus, Edit, Trash2, MapPin, Star, ToggleLeft, ToggleRight, Car } from 'lucide-react';
@@ -6,9 +6,20 @@ import { useApp, useAuth } from '../../context/AppContext';
 
 export default function HostVehiclesPage() {
   const { currentUser } = useAuth();
-  const { vehicles, updateVehicle, removeVehicle } = useApp();
+  const { vehicles, updateVehicle, removeVehicle, refreshVehicles } = useApp();
   const navigate = useNavigate();
   const [deleting, setDeleting] = useState<string | null>(null);
+
+  useEffect(() => {
+    refreshVehicles();
+    const handleUpdate = () => refreshVehicles();
+    window.addEventListener('vaygo:vehicles', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('vaygo:vehicles', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, [refreshVehicles]);
 
   const myVehicles = vehicles.filter(v =>
     (v.hostId && v.hostId === currentUser?.id) ||

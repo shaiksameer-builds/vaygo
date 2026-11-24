@@ -516,7 +516,7 @@ export default function HostAddVehiclePage() {
 
           <section className="glass-card rounded-2xl p-5 border border-white/15">
             <div className="flex items-center gap-3">
-              <input type="checkbox" id="isActive" {...register('isActive')} className="w-4 h-4 rounded accent-white cursor-pointer" />
+              <input type="checkbox" id="isActive" defaultChecked={true} {...register('isActive')} className="w-4 h-4 rounded accent-white cursor-pointer" />
               <div>
                 <label htmlFor="isActive" className="text-sm font-bold text-white cursor-pointer">List as Active</label>
                 <p className="text-[10px] text-[#A1A1AA] mt-0.5">Uncheck to save as inactive (not visible to renters).</p>

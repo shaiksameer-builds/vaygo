@@ -261,11 +261,9 @@ export function seedVehiclesIfEmpty(existingVehicles: Vehicle[], raviId = 'u_hos
     }
   }
 
-  // Also ensure all vehicles belonging to Ravi (by hostId or ownerId or email match) have isActive !== false
-  return result.map((v) => {
-    if (v.hostId === raviId || v.ownerId === raviId) {
-      return { ...v, isActive: v.isActive !== false };
-    }
-    return v;
-  });
+  // Ensure ALL vehicles have isActive !== false so newly added vehicles are never hidden
+  return result.map((v) => ({
+    ...v,
+    isActive: v.isActive !== false,
+  }));
 }

@@ -133,13 +133,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setCurrentUser = useCallback((user: User | null) => {
     setSession(user);
     setCurrentUserState(user);
-    setVehicles(getVehicles());
+    const raw = getVehicles();
+    const u = getUsers();
+    const r = u.find((x) => x.email && x.email.trim().toLowerCase() === 'ravi@gmail.com');
+    const rId = r ? r.id : 'u_host_ravi';
+    setVehicles(seedVehiclesIfEmpty(raw, rId));
     setBookings(getBookings());
   }, []);
 
   const logout = useCallback(() => {
     setSession(null);
     setCurrentUserState(null);
+    const raw = getVehicles();
+    const u = getUsers();
+    const r = u.find((x) => x.email && x.email.trim().toLowerCase() === 'ravi@gmail.com');
+    const rId = r ? r.id : 'u_host_ravi';
+    setVehicles(seedVehiclesIfEmpty(raw, rId));
+    setBookings(getBookings());
   }, []);
 
   const updateProfile = useCallback(
@@ -174,13 +184,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const vehicle: Vehicle = {
         ...payload,
         id: 'v_' + generateId(),
+        isActive: payload.isActive !== false,
         rating: 0,
         reviewCount: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       upsertVehicle(vehicle);
-      setVehicles(getVehicles());
+      const raw = getVehicles();
+      const u = getUsers();
+      const r = u.find((x) => x.email && x.email.trim().toLowerCase() === 'ravi@gmail.com');
+      const rId = r ? r.id : 'u_host_ravi';
+      setVehicles(seedVehiclesIfEmpty(raw, rId));
       return vehicle;
     },
     []

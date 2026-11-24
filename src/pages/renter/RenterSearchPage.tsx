@@ -16,21 +16,22 @@ function formatDateTime(iso: string) {
   return `${d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} at ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function matchesLocation(vehicle: Vehicle, query: string): boolean {
-  if (!query.trim()) return true;
-  const q = query.toLowerCase();
-  const area = vehicle.area || '';
-  const city = vehicle.city || '';
-  const pickup = vehicle.pickupAddress || '';
-  const state = vehicle.state || '';
-  const loc = vehicle.location || '';
-  return (
-    area.toLowerCase().includes(q) ||
-    city.toLowerCase().includes(q) ||
-    pickup.toLowerCase().includes(q) ||
-    state.toLowerCase().includes(q) ||
-    loc.toLowerCase().includes(q)
-  );
+function matchesQuery(vehicle: Vehicle, query: string): boolean {
+  if (!query || !query.trim()) return true;
+  const q = query.trim().toLowerCase();
+  const fields = [
+    vehicle.name,
+    vehicle.brand,
+    vehicle.model,
+    vehicle.category,
+    vehicle.area,
+    vehicle.city,
+    vehicle.pickupAddress,
+    vehicle.state,
+    vehicle.location,
+    vehicle.description,
+  ];
+  return fields.some((f) => f && f.toLowerCase().includes(q));
 }
 
 interface SearchState {
@@ -110,19 +111,17 @@ export default function RenterSearchPage() {
   const totalAmount = selectedVehicle ? Math.round(selectedVehicle.pricePerHour * durationHours) : 0;
 
   const results = useMemo(() => {
-    if (!searched) return [];
-    let list = vehicles.filter(v => v.isActive !== false && matchesLocation(v, search.location));
+    let list = vehicles.filter(v => v.isActive !== false && matchesQuery(v, search.location));
     if (filterCat !== 'all') list = list.filter(v => v.category === filterCat);
-    if (filterMode !== 'any') list = list.filter(v => v.rentalModes.includes(filterMode));
+    if (filterMode !== 'any') list = list.filter(v => v.rentalModes?.includes(filterMode));
     list = list.filter(v => v.pricePerHour <= filterMax);
     if (filterSort === 'price_asc') list = [...list].sort((a, b) => a.pricePerHour - b.pricePerHour);
     else if (filterSort === 'price_desc') list = [...list].sort((a, b) => b.pricePerHour - a.pricePerHour);
     else list = [...list].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     return list;
-  }, [searched, vehicles, search.location, filterCat, filterMode, filterSort, filterMax]);
+  }, [vehicles, search.location, filterCat, filterMode, filterSort, filterMax]);
 
   const handleSearch = () => {
-    if (durationError) { setSearchError(durationError); return; }
     setSearchError('');
     setSearched(true);
   };
@@ -185,7 +184,7 @@ export default function RenterSearchPage() {
                 <MapPin size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
                 <input
                   type="text"
-                  placeholder="Koramangala, Bengaluru…"
+                  placeholder="Search vehicle name, model, or location…"
                   value={search.location}
                   onChange={e => setSearch(s => ({ ...s, location: e.target.value }))}
                   className="w-full h-11 pl-9 pr-9 rounded-xl border border-white/15 bg-white/[0.04] text-white text-sm placeholder-neutral-500 focus:outline-none focus:border-white/40 transition-all"
