@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -66,7 +66,7 @@ export default function HostAddVehiclePage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const {
-    register, handleSubmit, watch, setValue,
+    register, handleSubmit, watch, setValue, reset,
     formState: { errors, isSubmitting },
   } = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleSchema),
@@ -99,6 +99,42 @@ export default function HostAddVehiclePage() {
       isActive: existing?.isActive ?? true,
     },
   });
+
+  useEffect(() => {
+    if (existing) {
+      reset({
+        category: existing.category,
+        brand: existing.brand,
+        model: existing.model,
+        year: existing.year,
+        registrationNumber: existing.registrationNumber,
+        colour: existing.colour,
+        description: existing.description,
+        engineCC: existing.specs?.engineCC,
+        transmission: (existing.specs?.transmission ?? '') as any,
+        fuelType: (existing.specs?.fuelType as FuelType) ?? 'Petrol',
+        seats: existing.specs?.seats ?? 2,
+        hasAC: existing.specs?.hasAC ?? false,
+        pickupAddress: existing.pickupAddress,
+        area: existing.area,
+        city: existing.city,
+        state: existing.state,
+        pinCode: existing.pinCode,
+        pricePerHour: existing.pricePerHour,
+        minRentalHours: existing.minRentalHours ?? 4,
+        securityDeposit: existing.securityDeposit ?? 0,
+        selfDrive: existing.rentalModes?.includes('self-drive') ?? true,
+        withDriver: existing.rentalModes?.includes('with-driver') ?? false,
+        availDays: existing.availability?.days ?? [0, 1, 2, 3, 4, 5, 6],
+        startTime: existing.availability?.startTime ?? '08:00',
+        endTime: existing.availability?.endTime ?? '20:00',
+        isActive: existing.isActive ?? true,
+      });
+      if (existing.images && existing.images.length > 0) {
+        setImages(existing.images);
+      }
+    }
+  }, [existing, reset]);
 
   const category = watch('category');
   const availDays = watch('availDays');

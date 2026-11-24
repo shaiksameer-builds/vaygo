@@ -63,8 +63,23 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUserState] = useState<User | null>(() => getSession());
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>(() => {
+    try {
+      const rawStored = getVehicles();
+      return rawStored.filter(
+        (v) => v && typeof v.id === 'string' && !v.id.startsWith('v_seed_') && !['v1', 'v2', 'v3', 'v4', 'v5', 'v6'].includes(v.id)
+      );
+    } catch {
+      return [];
+    }
+  });
+  const [bookings, setBookings] = useState<Booking[]>(() => {
+    try {
+      return getBookings();
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
     migrateAndSeedAuth();
@@ -78,7 +93,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const rawStored = getVehicles();
     const hostOnlyVehicles = rawStored.filter(
-      (v) => !v.id.startsWith('v_seed_') && !['v1', 'v2', 'v3', 'v4', 'v5', 'v6'].includes(v.id)
+      (v) => v && typeof v.id === 'string' && !v.id.startsWith('v_seed_') && !['v1', 'v2', 'v3', 'v4', 'v5', 'v6'].includes(v.id)
     );
     if (hostOnlyVehicles.length !== rawStored.length) {
       saveVehicles(hostOnlyVehicles);
