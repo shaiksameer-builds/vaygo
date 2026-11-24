@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, BookOpen, ArrowUpRight, Clock, Star, MapPin } from 'lucide-react';
@@ -21,12 +22,20 @@ function StatusBadge({ status }: { status: Booking['status'] }) {
 
 export default function RenterDashboardPage() {
   const { currentUser } = useAuth();
-  const { vehicles, getBookingsForRenter } = useApp();
+  const { vehicles, refreshVehicles, getBookingsForRenter } = useApp();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    refreshVehicles();
+  }, [refreshVehicles]);
 
   const myBookings = currentUser ? getBookingsForRenter(currentUser.id) : [];
   const activeBookings = myBookings.filter(b => b.status === 'pending' || b.status === 'accepted');
-  const availableVehicles = vehicles.filter(v => v.isActive !== false).slice(0, 6);
+  const availableVehicles = useMemo(() => {
+    return [...vehicles]
+      .filter(v => v.isActive !== false)
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  }, [vehicles]);
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -115,12 +124,18 @@ export default function RenterDashboardPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {availableVehicles.map((v, i) => (
-                <motion.div key={v.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+              {availableVehicles.map((v) => (
+                <div key={v.id}
                   onClick={() => navigate(`/renter/search?vehicleId=${v.id}`)}
                   className="glass-card rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-1 transition-all group border border-white/10 hover:border-white/25">
                   <div className="relative h-44 bg-[#0A0A0A]">
-                    <img src={v.images[0]} alt={v.model} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <img
+                      src={v.images?.[0] || 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=800&q=80'}
+                      alt={v.model}
+                      loading="eager"
+                      decoding="async"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
                     <div className="absolute top-2.5 left-2.5">
                       <span className="text-[10px] font-black uppercase tracking-wider bg-black/70 backdrop-blur-md text-white px-2 py-0.5 rounded-full border border-white/15">
                         {v.category}
@@ -147,7 +162,7 @@ export default function RenterDashboardPage() {
                       </div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           )}

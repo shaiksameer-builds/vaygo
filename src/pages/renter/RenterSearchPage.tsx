@@ -45,10 +45,14 @@ function getDurationHours(start: Date, end: Date): number {
 }
 
 export default function RenterSearchPage() {
-  const { vehicles, createBooking } = useApp();
+  const { vehicles, refreshVehicles, createBooking } = useApp();
   const { currentUser } = useAuth();
   const [params] = useSearchParams();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    refreshVehicles();
+  }, [refreshVehicles]);
 
   const now = new Date();
   const startDefault = new Date(now.getTime() + 60 * 60000);
@@ -61,7 +65,7 @@ export default function RenterSearchPage() {
     endDate: endDefault.toISOString().split('T')[0],
     endTime: `${pad(endDefault.getHours())}:00`,
   });
-  const [searched, setSearched] = useState(false);
+  const [searched, setSearched] = useState(true);
   const [searchError, setSearchError] = useState('');
 
   const [filterCat, setFilterCat] = useState<VehicleCategory | 'all'>('all');
@@ -105,7 +109,7 @@ export default function RenterSearchPage() {
     list = list.filter(v => v.pricePerHour <= filterMax);
     if (filterSort === 'price_asc') list = [...list].sort((a, b) => a.pricePerHour - b.pricePerHour);
     else if (filterSort === 'price_desc') list = [...list].sort((a, b) => b.pricePerHour - a.pricePerHour);
-    else list = [...list].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+    else list = [...list].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     return list;
   }, [searched, vehicles, search.location, filterCat, filterMode, filterSort, filterMax]);
 
@@ -267,12 +271,18 @@ export default function RenterSearchPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {results.map((v, i) => (
-                  <motion.div key={v.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+                {results.map((v) => (
+                  <div key={v.id}
                     className="glass-card rounded-2xl overflow-hidden cursor-pointer hover:-translate-y-1 transition-all group border border-white/10 hover:border-white/25"
                     onClick={() => { setSelectedVehicle(v); setSelectedMode(v.rentalModes[0]); setBookingSuccess(null); setBookingError(''); }}>
                     <div className="relative h-44 bg-[#0A0A0A]">
-                      <img src={v.images[0]} alt={v.model} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img
+                        src={v.images?.[0] || 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=800&q=80'}
+                        alt={v.model}
+                        loading="eager"
+                        decoding="async"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
                       <div className="absolute top-2.5 left-2.5">
                         <span className="text-[10px] font-black uppercase tracking-wider bg-black/70 backdrop-blur-md text-white px-2 py-0.5 rounded-full border border-white/15">{v.category}</span>
                       </div>
@@ -314,7 +324,7 @@ export default function RenterSearchPage() {
                         </div>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             )}

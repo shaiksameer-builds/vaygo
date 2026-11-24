@@ -161,7 +161,7 @@ export function upsertVehicle(vehicle: Vehicle): void {
   if (idx >= 0) {
     list[idx] = vehicle;
   } else {
-    list.push(vehicle);
+    list.unshift(vehicle);
   }
   saveVehicles(list);
 }
