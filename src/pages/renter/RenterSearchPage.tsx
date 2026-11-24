@@ -52,6 +52,13 @@ export default function RenterSearchPage() {
 
   useEffect(() => {
     refreshVehicles();
+    const handleUpdate = () => refreshVehicles();
+    window.addEventListener('vaygo:vehicles', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('vaygo:vehicles', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
   }, [refreshVehicles]);
 
   const now = new Date();

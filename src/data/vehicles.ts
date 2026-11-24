@@ -109,7 +109,9 @@ export const heroVehicles: FeaturedHeroVehicle[] = [
   },
 ];
 
-export const vehicles: Vehicle[] = [];
+import { SEED_VEHICLES } from './seedData';
+
+export const vehicles: Vehicle[] = SEED_VEHICLES;
 
 export const cities = ['Bangalore', 'Mumbai', 'Delhi', 'Hyderabad', 'Chennai', 'Pune', 'Kolkata'];
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home, Car, Plus, Inbox, BookOpen, TrendingUp, User as UserIcon,
-  LogOut, Menu,
+  LogOut, Menu, Search,
 } from 'lucide-react';
 import { useAuth, useApp } from '../context/AppContext';
 import Logo from '../components/common/Logo';
@@ -11,6 +11,7 @@ const navItems = [
   { label: 'Dashboard', path: '/host/dashboard', icon: Home },
   { label: 'My Vehicles', path: '/host/vehicles', icon: Car },
   { label: 'Add Vehicle', path: '/host/vehicles/add', icon: Plus },
+  { label: 'Renter Dashboard', path: '/renter/dashboard', icon: Search },
   { label: 'Requests', path: '/host/requests', icon: Inbox },
   { label: 'Bookings', path: '/host/bookings', icon: BookOpen },
   { label: 'Earnings', path: '/host/earnings', icon: TrendingUp },

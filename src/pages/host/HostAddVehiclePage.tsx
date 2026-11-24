@@ -219,7 +219,7 @@ export default function HostAddVehiclePage() {
         endTime: data.endTime || '20:00',
       },
       images,
-      isActive: Boolean(data.isActive),
+      isActive: data.isActive !== false,
     };
 
     if (isEdit && existing) {

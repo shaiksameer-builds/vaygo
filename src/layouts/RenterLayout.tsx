@@ -60,6 +60,14 @@ export default function RenterLayout() {
                   </Link>
                 );
               })}
+              {currentUser?.role === 'host' && (
+                <Link
+                  to="/host/dashboard"
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/10 text-white hover:bg-white/20 transition-all border border-white/20 ml-2"
+                >
+                  Host Mode
+                </Link>
+              )}
             </nav>
           </div>
 

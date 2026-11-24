@@ -27,6 +27,13 @@ export default function RenterDashboardPage() {
 
   useEffect(() => {
     refreshVehicles();
+    const handleUpdate = () => refreshVehicles();
+    window.addEventListener('vaygo:vehicles', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('vaygo:vehicles', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
   }, [refreshVehicles]);
 
   const myBookings = currentUser ? getBookingsForRenter(currentUser.id) : [];

@@ -26,12 +26,13 @@ import HostProfilePage from './pages/host/HostProfilePage';
 // Not Found
 import NotFoundPage from './pages/public/NotFoundPage';
 
-/** Redirect unauthenticated users to login. */
+/** Redirect unauthenticated users to login. Hosts can browse renter marketplace & dashboard. */
 function RequireAuth({ role }: { role?: 'renter' | 'host' }) {
   const { currentUser } = useAuth();
   if (!currentUser) return <Navigate to="/login" replace />;
-  if (role && currentUser.role !== role) {
-    return <Navigate to={currentUser.role === 'host' ? '/host/dashboard' : '/renter/dashboard'} replace />;
+  // Only restrict host-specific management routes from pure renters
+  if (role === 'host' && currentUser.role !== 'host') {
+    return <Navigate to="/renter/dashboard" replace />;
   }
   return <Outlet />;
 }

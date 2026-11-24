@@ -10,6 +10,7 @@ import type { User, Vehicle, Booking, BookingStatus } from '../types';
 import {
   getSession,
   setSession,
+  getUsers,
   getVehicles,
   saveVehicles,
   upsertVehicle,
@@ -24,6 +25,7 @@ import {
   EVENTS,
 } from '../services/store';
 import { migrateAndSeedAuth } from '../services/authService';
+import { seedVehiclesIfEmpty } from '../data/seedData';
 
 interface AppContextValue {
   currentUser: User | null;
@@ -66,9 +68,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [vehicles, setVehicles] = useState<Vehicle[]>(() => {
     try {
       const rawStored = getVehicles();
-      return rawStored.filter(
-        (v) => v && typeof v.id === 'string' && !v.id.startsWith('v_seed_') && !['v1', 'v2', 'v3', 'v4', 'v5', 'v6'].includes(v.id)
-      );
+      const users = getUsers();
+      const raviUser = users.find((u) => u.email && u.email.trim().toLowerCase() === 'ravi@gmail.com');
+      const raviId = raviUser ? raviUser.id : 'u_host_ravi';
+      return seedVehiclesIfEmpty(rawStored, raviId);
     } catch {
       return [];
     }
@@ -84,26 +87,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     migrateAndSeedAuth();
 
-    // Purge legacy/seeded vehicles so only vehicles added by hosts exist
-    const PURGE_FLAG = 'vaygo_vehicles_purged_v3';
-    if (typeof window !== 'undefined' && !localStorage.getItem(PURGE_FLAG)) {
-      localStorage.removeItem('vaygo_vehicles');
-      localStorage.setItem(PURGE_FLAG, 'true');
-    }
-
     const rawStored = getVehicles();
-    const hostOnlyVehicles = rawStored.filter(
-      (v) => v && typeof v.id === 'string' && !v.id.startsWith('v_seed_') && !['v1', 'v2', 'v3', 'v4', 'v5', 'v6'].includes(v.id)
-    );
-    if (hostOnlyVehicles.length !== rawStored.length) {
-      saveVehicles(hostOnlyVehicles);
+    const users = getUsers();
+    const raviUser = users.find((u) => u.email && u.email.trim().toLowerCase() === 'ravi@gmail.com');
+    const raviId = raviUser ? raviUser.id : 'u_host_ravi';
+    const initializedVehicles = seedVehiclesIfEmpty(rawStored, raviId);
+
+    if (initializedVehicles.length !== rawStored.length || JSON.stringify(initializedVehicles) !== JSON.stringify(rawStored)) {
+      saveVehicles(initializedVehicles);
     }
-    setVehicles(hostOnlyVehicles);
+    setVehicles(initializedVehicles);
 
     setBookings(getBookings());
 
     const handleSession = () => setCurrentUserState(getSession());
-    const handleVehicles = () => setVehicles(getVehicles());
+    const handleVehicles = () => {
+      const currentStored = getVehicles();
+      const u = getUsers();
+      const r = u.find((x) => x.email && x.email.trim().toLowerCase() === 'ravi@gmail.com');
+      const rId = r ? r.id : 'u_host_ravi';
+      setVehicles(seedVehiclesIfEmpty(currentStored, rId));
+    };
     const handleBookings = () => setBookings(getBookings());
 
     window.addEventListener(EVENTS.SESSION, handleSession);
@@ -150,7 +154,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCurrentUserState(null);
   }, [currentUser]);
 
-  const refreshVehicles = useCallback(() => setVehicles(getVehicles()), []);
+  const refreshVehicles = useCallback(() => {
+    const raw = getVehicles();
+    const u = getUsers();
+    const r = u.find((x) => x.email && x.email.trim().toLowerCase() === 'ravi@gmail.com');
+    const rId = r ? r.id : 'u_host_ravi';
+    const seeded = seedVehiclesIfEmpty(raw, rId);
+    setVehicles(seeded);
+  }, []);
 
   const addVehicle = useCallback(
     (payload: Omit<Vehicle, 'id' | 'createdAt' | 'updatedAt' | 'rating' | 'reviewCount'>): Vehicle => {
