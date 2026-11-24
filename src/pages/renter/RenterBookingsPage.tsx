@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { XCircle, Calendar } from 'lucide-react';
 import { useApp, useAuth } from '../../context/AppContext';
@@ -19,9 +19,26 @@ const STATUS_STYLES: Record<string, string> = {
 
 export default function RenterBookingsPage() {
   const { currentUser } = useAuth();
-  const { getBookingsForRenter, updateBookingStatus, vehicles } = useApp();
+  const { getBookingsForRenter, updateBookingStatus, vehicles, refreshBookings, refreshVehicles } = useApp();
   const [tab, setTab] = useState<'active' | 'history'>('active');
   const [cancelling, setCancelling] = useState<string | null>(null);
+
+  useEffect(() => {
+    refreshBookings();
+    refreshVehicles();
+    const handleUpdate = () => {
+      refreshBookings();
+      refreshVehicles();
+    };
+    window.addEventListener('vaygo:bookings', handleUpdate);
+    window.addEventListener('vaygo:vehicles', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('vaygo:bookings', handleUpdate);
+      window.removeEventListener('vaygo:vehicles', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, [refreshBookings, refreshVehicles]);
 
   const myBookings = currentUser ? getBookingsForRenter(currentUser.id) : [];
   const active = myBookings.filter(b => b.status === 'pending' || b.status === 'accepted');

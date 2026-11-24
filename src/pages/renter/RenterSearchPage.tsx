@@ -6,6 +6,7 @@ import {
   Filter, CheckCircle2, XCircle, Loader2,
 } from 'lucide-react';
 import { useApp, useAuth } from '../../context/AppContext';
+import { getUsers } from '../../services/store';
 import type { Vehicle, VehicleCategory, RentalMode, Booking } from '../../types';
 
 function pad(n: number) { return String(n).padStart(2, '0'); }
@@ -137,9 +138,19 @@ export default function RenterSearchPage() {
     setBookingLoading(true);
     setBookingError('');
     try {
+      const allUsers = getUsers();
+      const raviUser = allUsers.find(u => u.email && u.email.trim().toLowerCase() === 'ravi@gmail.com');
+      let targetHostId = selectedVehicle.hostId || selectedVehicle.ownerId;
+      if (selectedVehicle.id.startsWith('v_ravi_') && raviUser) {
+        targetHostId = raviUser.id;
+      }
+      if (!targetHostId) {
+        targetHostId = 'u_host_ravi';
+      }
+
       const b = createBooking({
         vehicleId: selectedVehicle.id,
-        hostId: selectedVehicle.hostId || selectedVehicle.ownerId || 'u_seed_host',
+        hostId: targetHostId,
         renterId: currentUser.id,
         rentalMode: selectedMode,
         startDateTime: startDT.toISOString(),

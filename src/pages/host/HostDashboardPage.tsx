@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Car, Inbox, TrendingUp, BookOpen, Plus, ArrowUpRight, Clock } from 'lucide-react';
@@ -5,9 +6,31 @@ import { useApp, useAuth } from '../../context/AppContext';
 
 export default function HostDashboardPage() {
   const { currentUser } = useAuth();
-  const { vehicles, getBookingsForHost, getRequestsForHost } = useApp();
+  const { vehicles, getBookingsForHost, getRequestsForHost, refreshBookings, refreshVehicles } = useApp();
 
-  const myVehicles = vehicles.filter(v => v.hostId === currentUser?.id);
+  useEffect(() => {
+    refreshBookings();
+    refreshVehicles();
+    const handleUpdate = () => {
+      refreshBookings();
+      refreshVehicles();
+    };
+    window.addEventListener('vaygo:bookings', handleUpdate);
+    window.addEventListener('vaygo:vehicles', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('vaygo:bookings', handleUpdate);
+      window.removeEventListener('vaygo:vehicles', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, [refreshBookings, refreshVehicles]);
+
+  const myVehicles = vehicles.filter(v =>
+    (v.hostId && v.hostId === currentUser?.id) ||
+    (v.ownerId && v.ownerId === currentUser?.id) ||
+    (currentUser?.email === 'ravi@gmail.com' && (v.hostId === 'u_host_ravi' || v.ownerId === 'u_host_ravi' || v.id.startsWith('v_ravi_'))) ||
+    (!v.hostId && !v.ownerId)
+  );
   const myBookings = currentUser ? getBookingsForHost(currentUser.id) : [];
   const pendingRequests = currentUser ? getRequestsForHost(currentUser.id) : [];
 

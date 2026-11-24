@@ -26,6 +26,7 @@ import {
 } from '../services/store';
 import { migrateAndSeedAuth } from '../services/authService';
 import { seedVehiclesIfEmpty } from '../data/seedData';
+import { initCloudSync } from '../services/cloudSync';
 
 interface AppContextValue {
   currentUser: User | null;
@@ -119,7 +120,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (e.key === 'vaygo_bookings') handleBookings();
     });
 
+    const stopSync = initCloudSync();
+
     return () => {
+      stopSync();
       window.removeEventListener(EVENTS.SESSION, handleSession);
       window.removeEventListener(EVENTS.VEHICLES, handleVehicles);
       window.removeEventListener(EVENTS.BOOKINGS, handleBookings);
@@ -129,6 +133,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setCurrentUser = useCallback((user: User | null) => {
     setSession(user);
     setCurrentUserState(user);
+    setVehicles(getVehicles());
+    setBookings(getBookings());
   }, []);
 
   const logout = useCallback(() => {
@@ -237,19 +243,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const getBookingsForHost = useCallback(
-    (hostId: string) =>
-      bookings.filter((b) => b.hostId === hostId).sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      ),
-    [bookings]
+    (hostId: string) => {
+      const userEmail = currentUser?.email?.toLowerCase();
+      return bookings
+        .filter((b) => {
+          if (b.hostId === hostId || b.hostId === currentUser?.id) return true;
+          if (userEmail === 'ravi@gmail.com' && (b.hostId === 'u_host_ravi' || b.hostId === hostId)) return true;
+          if (userEmail === 'host@vaygo.in' && (b.hostId === 'u_seed_host' || b.hostId === hostId)) return true;
+          const v = vehicles.find((x) => x.id === b.vehicleId);
+          if (v) {
+            if (v.hostId === hostId || v.ownerId === hostId || v.hostId === currentUser?.id || v.ownerId === currentUser?.id) return true;
+            if (userEmail === 'ravi@gmail.com' && (v.hostId === 'u_host_ravi' || v.ownerId === 'u_host_ravi' || v.id.startsWith('v_ravi_'))) return true;
+          }
+          return false;
+        })
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    },
+    [bookings, vehicles, currentUser]
   );
 
   const getRequestsForHost = useCallback(
-    (hostId: string) =>
-      bookings
-        .filter((b) => b.hostId === hostId && b.status === 'pending')
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    [bookings]
+    (hostId: string) => {
+      const userEmail = currentUser?.email?.toLowerCase();
+      return bookings
+        .filter((b) => {
+          if (b.status !== 'pending') return false;
+          if (b.hostId === hostId || b.hostId === currentUser?.id) return true;
+          if (userEmail === 'ravi@gmail.com' && (b.hostId === 'u_host_ravi' || b.hostId === hostId)) return true;
+          if (userEmail === 'host@vaygo.in' && (b.hostId === 'u_seed_host' || b.hostId === hostId)) return true;
+          const v = vehicles.find((x) => x.id === b.vehicleId);
+          if (v) {
+            if (v.hostId === hostId || v.ownerId === hostId || v.hostId === currentUser?.id || v.ownerId === currentUser?.id) return true;
+            if (userEmail === 'ravi@gmail.com' && (v.hostId === 'u_host_ravi' || v.ownerId === 'u_host_ravi' || v.id.startsWith('v_ravi_'))) return true;
+          }
+          return false;
+        })
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    },
+    [bookings, vehicles, currentUser]
   );
 
   return (

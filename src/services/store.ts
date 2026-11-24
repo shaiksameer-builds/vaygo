@@ -7,6 +7,7 @@
  */
 
 import type { User, Vehicle, Booking, BookingStatus } from '../types';
+import { broadcastCloudSync } from './cloudSync';
 
 // ─── Storage Keys ──────────────────────────────────────────────────────────────
 export const KEYS = {
@@ -23,8 +24,24 @@ export const EVENTS = {
   BOOKINGS: 'vaygo:bookings',
 } as const;
 
+const bc = typeof window !== 'undefined' && 'BroadcastChannel' in window ? new BroadcastChannel('vaygo_cross_tab_sync') : null;
+if (bc) {
+  bc.onmessage = (ev) => {
+    if (ev.data?.event) {
+      window.dispatchEvent(new CustomEvent(ev.data.event));
+    }
+  };
+}
+
 function emit(event: string) {
   window.dispatchEvent(new CustomEvent(event));
+  if (bc) {
+    try {
+      bc.postMessage({ event });
+    } catch {
+      // Ignore broadcast errors
+    }
+  }
 }
 
 // ─── Generic Helpers ───────────────────────────────────────────────────────────
@@ -164,10 +181,12 @@ export function upsertVehicle(vehicle: Vehicle): void {
     list.unshift(vehicle);
   }
   saveVehicles(list);
+  broadcastCloudSync('vehicle', 'upsert', vehicle);
 }
 
 export function deleteVehicle(vehicleId: string): void {
   saveVehicles(getVehicles().filter((v) => v.id !== vehicleId));
+  broadcastCloudSync('vehicle', 'delete', { id: vehicleId });
 }
 
 // ─── Bookings ──────────────────────────────────────────────────────────────────
@@ -185,9 +204,10 @@ export function upsertBooking(booking: Booking): void {
   if (idx >= 0) {
     list[idx] = booking;
   } else {
-    list.push(booking);
+    list.unshift(booking);
   }
   saveBookings(list);
+  broadcastCloudSync('booking', 'upsert', booking);
 }
 
 export function updateBookingStatus(
@@ -202,6 +222,7 @@ export function updateBookingStatus(
   booking.updatedAt = new Date().toISOString();
   if (hostNote !== undefined) booking.hostNote = hostNote;
   saveBookings(list);
+  broadcastCloudSync('booking', 'upsert', booking);
 }
 
 // ─── Reference number generator ────────────────────────────────────────────────

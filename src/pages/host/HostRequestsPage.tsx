@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Check, X, Inbox, Clock, User } from 'lucide-react';
 import { useApp, useAuth } from '../../context/AppContext';
@@ -12,10 +12,27 @@ function fmt(iso: string) {
 
 export default function HostRequestsPage() {
   const { currentUser } = useAuth();
-  const { getRequestsForHost, vehicles, updateBookingStatus, getBookingsForHost } = useApp();
+  const { getRequestsForHost, vehicles, updateBookingStatus, getBookingsForHost, refreshBookings, refreshVehicles } = useApp();
   const [processing, setProcessing] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState('');
   const [showRejectInput, setShowRejectInput] = useState<string | null>(null);
+
+  useEffect(() => {
+    refreshBookings();
+    refreshVehicles();
+    const handleUpdate = () => {
+      refreshBookings();
+      refreshVehicles();
+    };
+    window.addEventListener('vaygo:bookings', handleUpdate);
+    window.addEventListener('vaygo:vehicles', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('vaygo:bookings', handleUpdate);
+      window.removeEventListener('vaygo:vehicles', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, [refreshBookings, refreshVehicles]);
 
   const pending = currentUser ? getRequestsForHost(currentUser.id) : [];
   const allUsers = getUsers();

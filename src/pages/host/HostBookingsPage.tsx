@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen } from 'lucide-react';
 import { useApp, useAuth } from '../../context/AppContext';
@@ -28,8 +28,25 @@ const TABS: { label: string; statuses: BookingStatus[] }[] = [
 
 export default function HostBookingsPage() {
   const { currentUser } = useAuth();
-  const { getBookingsForHost, vehicles, updateBookingStatus } = useApp();
+  const { getBookingsForHost, vehicles, updateBookingStatus, refreshBookings, refreshVehicles } = useApp();
   const [tab, setTab] = useState(0);
+
+  useEffect(() => {
+    refreshBookings();
+    refreshVehicles();
+    const handleUpdate = () => {
+      refreshBookings();
+      refreshVehicles();
+    };
+    window.addEventListener('vaygo:bookings', handleUpdate);
+    window.addEventListener('vaygo:vehicles', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('vaygo:bookings', handleUpdate);
+      window.removeEventListener('vaygo:vehicles', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, [refreshBookings, refreshVehicles]);
 
   const all = currentUser ? getBookingsForHost(currentUser.id) : [];
   const filtered = all.filter(b => TABS[tab].statuses.includes(b.status));
