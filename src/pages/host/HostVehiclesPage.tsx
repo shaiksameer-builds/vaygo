@@ -10,7 +10,11 @@ export default function HostVehiclesPage() {
   const navigate = useNavigate();
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  const myVehicles = vehicles.filter(v => v.hostId === currentUser?.id);
+  const myVehicles = vehicles.filter(v =>
+    (v.hostId && v.hostId === currentUser?.id) ||
+    (v.ownerId && v.ownerId === currentUser?.id) ||
+    (!v.hostId && !v.ownerId)
+  );
 
   const toggleActive = (v: Parameters<typeof updateVehicle>[0]) => {
     updateVehicle({ ...v, isActive: !v.isActive, updatedAt: new Date().toISOString() });
